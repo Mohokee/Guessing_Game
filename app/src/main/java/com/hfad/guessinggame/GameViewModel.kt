@@ -1,22 +1,47 @@
 package com.hfad.guessinggame
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.LiveData
 
 class GameViewModel : ViewModel() {
     //Possible Words
-    val words = listOf("Horse","Mouse","Interlocutor","Shrimp","Ghost","Frog","Waffle","Geriatric","Serendipitous")
-    val secretWord = words.random().uppercase()
-    var secretWordDisplay = ""
+    private val words = listOf(
+        "Horse",
+        "Mouse",
+        "Interlocutor",
+        "Shrimp",
+        "Ghost",
+        "Frog",
+        "Waffle",
+        "Geriatric",
+        "Serendipitous",
+        "Hone",
+        "Loquat",
+        "Burble",
+        "Sauce"
+    )
+    private val secretWord = words.random().uppercase()
+    private val _secretWordDisplay = MutableLiveData<String>()
+    val secretWordDisplay: LiveData<String>
+        get() = _secretWordDisplay
     var correctGuesses = ""
-    var incorrectGuesses = ""
-    var livesLeft = 8
+    private val _incorrectGuesses = MutableLiveData<String>("")
+    val incorrectGuesses: LiveData<String>
+        get() = _incorrectGuesses
+    private val _livesLeft = MutableLiveData<Int>(8)
+    val livesLeft : LiveData<Int>
+        get() = _livesLeft
+    private val _gameOver = MutableLiveData<Boolean>(false)
+    val gameOver : LiveData<Boolean>
+        get() = _gameOver
 
     init {
         //See how the secret word should display, and update the screen
-        secretWordDisplay = deriveSecretWordDisplay()
+        _secretWordDisplay.value = deriveSecretWordDisplay()
     }
 
-    fun deriveSecretWordDisplay(): String{
+    private fun deriveSecretWordDisplay(): String {
         var display = ""
         secretWord.forEach {
             display += checkLetter(it.toString())
@@ -24,34 +49,39 @@ class GameViewModel : ViewModel() {
         return display
     }
 
-    fun checkLetter(str:String) = when (correctGuesses.contains(str)){
+    private fun checkLetter(str: String) = when (correctGuesses.contains(str)) {
         true -> str
         false -> "_"
     }
 
-    fun makeGuess(guess:String){
-        if(guess.length == 1){
-            if(secretWord.contains(guess)){
+    fun makeGuess(guess: String) {
+        if (guess.length == 1) {
+            if (secretWord.contains(guess)) {
                 correctGuesses += guess
-                secretWordDisplay = deriveSecretWordDisplay()
+                _secretWordDisplay.value = deriveSecretWordDisplay()
             } else {
-                incorrectGuesses += "$guess "
-                livesLeft --
+                _incorrectGuesses.value += "$guess "
+                _livesLeft.value = _livesLeft.value?.minus(1)
             }
+            if(isWon()||isLost()) _gameOver.value = true
         }
     }
 
-    fun isWon() = secretWord.equals(secretWordDisplay,true)
+    private fun isWon() = secretWord.equals(secretWordDisplay.value, true)
 
-    fun isLost() = livesLeft <= 0
+    private fun isLost() = (livesLeft.value ?: 0) <= 0
 
 
-    fun wonLostMessage(): String{
+    fun wonLostMessage(): String {
         var message = ""
-        if(isWon()) message = "You won!"
-        if(isLost()) message = "You lost!"
+        if (isWon()) message = "You won!"
+        if (isLost()) message = "You lost!"
         message += " The word was $secretWord"
         return message
+    }
+
+    fun finishGame(){
+        _gameOver.value = true
     }
 
 }
